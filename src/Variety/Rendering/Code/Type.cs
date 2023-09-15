@@ -1,0 +1,161 @@
+﻿using Microsoft.CodeAnalysis;
+using Variety.Rendering.Contents;
+
+namespace Variety.Rendering.Code;
+
+internal readonly struct Type<TName> : IDisposable
+    where TName : Content
+{
+    private readonly TName name;
+    private readonly Output output;
+    private readonly Output.Block block;
+
+    private Type(TName name, Output output, Output.Block block)
+    {
+        this.name = name;
+        this.block = block;
+        this.output = output;
+    }
+
+    public static Type<TName> Open(Output output, string modifiers, string type, in TName name)
+    {
+        using (output.StartLine())
+        {
+            output.Write(modifiers);
+            output.Write(" ");
+            output.Write(type);
+            output.Write(" ");
+            name.Write(output);
+        }
+
+        var block = output.OpenBlock();
+        return new Type<TName>(name, output, block);
+    }
+
+    public static Type<Verbatim> OpenPart(Output output, INamedTypeSymbol symbol)
+    {
+        using (output.StartLine())
+        {
+            output.Write("partial");
+            output.Write(" ");
+
+            var kind = symbol.TypeKind switch
+            {
+                TypeKind.Class when symbol.IsRecord => "record",
+                TypeKind.Class => "class",
+                TypeKind.Struct when symbol.IsRecord => "record struct",
+                TypeKind.Struct => "struct",
+                var typeKind => $"WRONG_{typeKind}"
+            };
+
+            output.Write(kind);
+            output.Write(" ");
+            output.Write(symbol.Name);
+
+            var parameters = symbol.TypeParameters;
+            if (parameters.Length > 0)
+            {
+                output.Write("<");
+
+                var list = output.CommaSeparated();
+                foreach (var parameter in parameters)
+                {
+                    list.Append(new Verbatim(parameter.Name));
+                }
+
+                output.Write(">");
+            }
+        }
+
+        var block = output.OpenBlock();
+        return new Type<Verbatim>(new Verbatim(symbol.Name), output, block);
+    }
+
+    // todo rename
+    public static Type<Verbatim> OpenPart2(Output output, INamedTypeSymbol symbol, INamedTypeSymbol @base)
+    {
+        using (output.StartLine())
+        {
+            output.Write("partial");
+            output.Write(" ");
+
+            var kind = symbol.TypeKind switch
+            {
+                TypeKind.Class when symbol.IsRecord => "record",
+                TypeKind.Class => "class",
+                TypeKind.Struct when symbol.IsRecord => "record struct",
+                TypeKind.Struct => "struct",
+                var typeKind => $"WRONG_{typeKind}"
+            };
+
+            output.Write(kind);
+            output.Write(" ");
+            output.Write(symbol.Name);
+
+            var parameters = symbol.TypeParameters;
+            if (parameters.Length > 0)
+            {
+                output.Write("<");
+
+                var list = output.CommaSeparated();
+                foreach (var parameter in parameters)
+                {
+                    list.Append(new Verbatim(parameter.Name));
+                }
+
+                output.Write(">");
+            }
+
+            output.Write(" : ");
+            new Contents.Type(@base).Write(output);
+        }
+
+        var block = output.OpenBlock();
+        return new Type<Verbatim>(new Verbatim(symbol.Name), output, block);
+    }
+
+    public void Constructor(INamedTypeSymbol rootType)
+    {
+        var attribute = ContentFactory.From("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
+        output.WriteLine(attribute);
+        output.Write("internal ");
+        name.Write(output);
+        var parameters = ContentFactory.Parentheses(
+            ContentFactory.CommaSeparated(
+                ContentFactory.Parameter(
+                    ContentFactory.Dotted(
+                        ContentFactory.From(rootType),
+                        ContentFactory.From("Code")
+                    ),
+                    ContentFactory.From("code")
+                ),
+                ContentFactory.From("global::System.Object value")
+            )
+        );
+        output.WriteLine(parameters);
+        using (output.OpenBlock())
+        {
+            output.WriteLine(ContentFactory.From("this.Code = code;"));
+            output.WriteLine(ContentFactory.From("this.Value = value;"));
+        }
+    }
+
+    public void GetAutoProperty<TType, TPropertyName>(TType type, TPropertyName propertyName)
+        where TType : Content
+        where TPropertyName : Content
+    {
+        using (output.StartLine())
+        {
+            output.Write("public ");
+            type.Write(output);
+            output.Write(" ");
+            propertyName.Write(output);
+            output.Write(" { get; }");
+        }
+    }
+
+    public void Dispose()
+    {
+        block.Dispose();
+    }
+}
