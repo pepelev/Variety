@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Variety.Rendering.Code;
 
@@ -52,6 +53,11 @@ internal readonly struct Type : Content
             {
                 if (namedType.IsGenericType && namedType.TypeArguments.All(argument => argument.Kind != SymbolKind.TypeParameter))
                 {
+                    if (!Debugger.IsAttached)
+                    {
+                        Debugger.Launch();
+                    }
+
                     Print(namedType.ConstructedFrom);
                     output.Write("<");
                     var list = output.CommaSeparated();
