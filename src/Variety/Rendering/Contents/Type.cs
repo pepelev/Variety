@@ -69,7 +69,11 @@ internal readonly struct Type : Content
             var outer = type.ContainingType;
             if (outer == null)
             {
-                var @namespace = new Namespace(type.ContainingNamespace, @this.globalPrefix);
+                var @namespace = new Namespace(
+                    type.ContainingNamespace,
+                    @this.globalPrefix,
+                    verbatimPrefix: @this.verbatimPrefix
+                );
                 @namespace.Write(output);
                 output.Write(@this.verbatimPrefix ? ".@" : ".");
                 output.Write(type.Name);

@@ -7,16 +7,18 @@ internal readonly struct Namespace : Content
 {
     private readonly INamespaceSymbol symbol;
     private readonly bool globalPrefix;
+    private readonly bool verbatimPrefix;
 
-    public Namespace(INamespaceSymbol symbol, bool globalPrefix)
+    public Namespace(INamespaceSymbol symbol, bool globalPrefix, bool verbatimPrefix = true)
     {
         this.symbol = symbol;
         this.globalPrefix = globalPrefix;
+        this.verbatimPrefix = verbatimPrefix;
     }
 
     public void Write(Output output)
     {
-        var prefix = globalPrefix;
+        var @this = this;
         Print(symbol);
 
         void Print(INamespaceSymbol @namespace)
@@ -24,18 +26,22 @@ internal readonly struct Namespace : Content
             var outer = @namespace.ContainingNamespace;
             if (outer == null || outer.IsGlobalNamespace)
             {
-                if (prefix)
+                if (@this.globalPrefix)
                 {
                     output.Write("global::");
                 }
 
-                output.Write("@");
+                if (@this.verbatimPrefix)
+                {
+                    output.Write("@");
+                }
+
                 output.Write(@namespace.Name);
             }
             else
             {
                 Print(outer);
-                output.Write(".@");
+                output.Write(@this.verbatimPrefix ? ".@" : ".");
                 output.Write(@namespace.Name);
             }
         }
