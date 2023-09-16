@@ -8,16 +8,18 @@ internal readonly struct Type : Content
     private static readonly string?[] arraySuffixesCache = new string?[16];
     private readonly ITypeSymbol symbol;
     private readonly bool globalPrefix;
+    private readonly bool verbatimPrefix;
 
-    public Type(ITypeSymbol symbol, bool globalPrefix = true)
+    public Type(ITypeSymbol symbol, bool verbatimPrefix = true, bool globalPrefix = true)
     {
         this.symbol = symbol;
+        this.verbatimPrefix = verbatimPrefix;
         this.globalPrefix = globalPrefix;
     }
 
     public void Write(Output output)
     {
-        var useGlobalPrefix = globalPrefix;
+        var @this = this;
         Print(symbol);
 
         void Print(ITypeSymbol type)
@@ -67,15 +69,15 @@ internal readonly struct Type : Content
             var outer = type.ContainingType;
             if (outer == null)
             {
-                var @namespace = new Namespace(type.ContainingNamespace, useGlobalPrefix);
+                var @namespace = new Namespace(type.ContainingNamespace, @this.globalPrefix);
                 @namespace.Write(output);
-                output.Write(".@");
+                output.Write(@this.verbatimPrefix ? ".@" : ".");
                 output.Write(type.Name);
                 return;
             }
 
             Print(outer);
-            output.Write(".@");
+            output.Write(@this.verbatimPrefix ? ".@" : ".");
             output.Write(type.Name);
         }
     }

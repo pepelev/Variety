@@ -15,7 +15,7 @@ internal sealed class Vary : Content
         this.varyRecord = varyRecord;
     }
 
-    public string Name => Type.Print() + ".g.cs";
+    public string Name => $"{Type}.g.cs".Replace('<', '(').Replace('>', ')');
 
     private ImmutableStack<INamedTypeSymbol> NestedHierarchy
     {
@@ -33,7 +33,7 @@ internal sealed class Vary : Content
         }
     }
 
-    private Type Type => new(varyRecord, globalPrefix: false);
+    private Type Type => new(varyRecord, verbatimPrefix: false, globalPrefix: false);
     private Namespace Namespace => new(varyRecord.ContainingNamespace, globalPrefix: false);
 
     public void Write(Output output)
