@@ -51,20 +51,15 @@ internal readonly struct Type : Content
 
             if (type is INamedTypeSymbol namedType)
             {
-                if (namedType.IsGenericType && namedType.TypeArguments.All(argument => argument.Kind != SymbolKind.TypeParameter))
+                if (namedType is { IsGenericType: true, TypeArguments.Length: > 0 } && namedType.TypeArguments.All(argument => argument.Kind != SymbolKind.TypeParameter))
                 {
-                    if (!Debugger.IsAttached)
-                    {
-                        Debugger.Launch();
-                    }
-
                     Print(namedType.ConstructedFrom);
                     output.Write("<");
                     var list = output.CommaSeparated();
 
                     foreach (var argument in namedType.TypeArguments)
                     {
-                        list.Append(new Type(argument));
+                        list.Append(new Type(argument, verbatimPrefix: @this.verbatimPrefix, globalPrefix: @this.globalPrefix));
                     }
 
                     output.Write(">");
