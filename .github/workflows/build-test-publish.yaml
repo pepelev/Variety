@@ -1,0 +1,49 @@
+name: Build, test and publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+defaults:
+  run:
+    working-directory: src
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 7.0.*
+
+    - name: Build
+      run: dotnet build --configuration Release
+
+    - name: Test
+      run: dotnet test --configuration Release --no-restore --no-build --verbosity normal
+
+    - name: Publish on version change
+      shell: bash
+      env:
+        NUGETKEY: ${{ secrets.NUGETKEY }}
+      run: |
+        Version=$(grep --only-matching --perl-regex '<Version>[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+)?</Version>' Variety/Variety.csproj | grep --only-matching --perl-regex '[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+)?')
+        echo "Version=$Version"
+        if test -z "$Version"; then
+          echo 'Could not get version from .csproj'
+          exit 1
+        fi
+        git fetch --tags
+        if test -n "$(git tag --list "$Version" | tr -d '[:space:]')"; then
+          echo "Version $Version already exists"
+          exit 0
+        fi
+        dotnet pack Variety --configuration Release --no-build --include-symbols --nologo --output nuget &&\
+        dotnet nuget push nuget/*.nupkg --source 'https://api.nuget.org/v3/index.json' --api-key "$NUGETKEY" --skip-duplicate &&\
+        git tag "$Version" && git push origin "$Version"
+        exit $?
