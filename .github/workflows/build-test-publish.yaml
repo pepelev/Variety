@@ -22,10 +22,10 @@ jobs:
         dotnet-version: 7.0.*
 
     - name: Build
-      run: dotnet build --configuration Release
+      run: dotnet build --configuration Release Variety.Tests
 
     - name: Test
-      run: dotnet test --configuration Release --no-restore --no-build --verbosity normal
+      run: dotnet test --configuration Release --no-restore --no-build --verbosity normal Variety.Tests
 
     - name: Publish on version change
       shell: bash
