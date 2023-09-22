@@ -1,4 +1,12 @@
-﻿namespace Variety;
+﻿namespace Variety.Playground;
 
 [Vary]
-internal partial record Abc { public partial record B; }
+public partial record Abc<T> { public sealed partial record B; }
+
+public sealed class D<T> : Abc<T>.Visitor<string>
+{
+    public override string Visit(Abc<T>.B b)
+    {
+        throw new NotImplementedException();
+    }
+}

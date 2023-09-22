@@ -1,12 +1,11 @@
-﻿using System.Collections.Immutable;
+﻿using Listing.Code;
+using Listing.Contents;
 using Microsoft.CodeAnalysis;
-using Variety.Rendering.Code;
-using Variety.Rendering.Contents;
-using Type = Variety.Rendering.Contents.Type;
+using Type = Listing.Contents.Type;
 
 namespace Variety;
 
-internal sealed class Vary : Content
+internal sealed class Vary : IContent
 {
     private readonly INamedTypeSymbol varyRecord;
 
@@ -17,74 +16,44 @@ internal sealed class Vary : Content
 
     public string Name => $"{Type}.g.cs".Replace('<', '(').Replace('>', ')');
 
-    private ImmutableStack<INamedTypeSymbol> NestedHierarchy
-    {
-        get
-        {
-            return ImmutableStack.CreateRange(Yield());
-
-            IEnumerable<INamedTypeSymbol> Yield()
-            {
-                for (var type = varyRecord; type != null; type = type.ContainingType)
-                {
-                    yield return type;
-                }
-            }
-        }
-    }
-
     private Type Type => new(varyRecord, verbatimPrefix: false, globalPrefix: false);
-    private Namespace Namespace => new(varyRecord.ContainingNamespace, globalPrefix: false);
 
     public void Write(Output output)
     {
-        using (output.OpenNamespace(Namespace))
+        var part = new Part(new Verbatim("abstract"), varyRecord, baseType: null);
+        using (part.Open(output))
         {
-            RenderPart(output, NestedHierarchy);
-        }
-    }
-
-    private void RenderPart(Output output, ImmutableStack<INamedTypeSymbol> parent)
-    {
-        if (!parent.IsEmpty)
-        {
-            var top = parent.Peek();
-            using (Type<Verbatim>.OpenPart(output, top))
+            output.WriteLine("public abstract TVisitorResult Accept<TVisitorResult>(Visitor<TVisitorResult> visitor);".AsContent());
+            output.WriteLine(new Empty());
+            output.WriteLine(new Verbatim("public abstract class Visitor<TVisitorResult>"));
+            using (output.OpenBlock())
             {
-                RenderPart(output, parent.Pop());
-                return;
+                foreach (var record in InnerRecords)
+                {
+                    using (output.StartLine())
+                    {
+                        output.Write("public abstract TVisitorResult Visit(");
+                        output.Write(new Type(record));
+                        output.Write(" ");
+                        output.Write(record.Name.ToLowerFirstCharacter());
+                        output.Write(");");
+                    }
+                }
             }
         }
 
         foreach (var innerRecord in InnerRecords)
         {
-            using (Type<Verbatim>.OpenPart2(output, innerRecord, varyRecord))
+            var innerPart = new Part(additionalModifiers: null, innerRecord, baseType: new Type(varyRecord));
+            using (innerPart.Open(output))
             {
                 output.WriteLine(
-                    new Verbatim(
-                        "public override TVisitorResult Accept<TVisitorResult>(Visitor<TVisitorResult> visitor) { return visitor.Visit(this); }"
-                    )
+                    "public override TVisitorResult Accept<TVisitorResult>(Visitor<TVisitorResult> visitor) { return visitor.Visit(this); }".AsContent()
                 );
-            }
-        }
-
-        output.WriteLine(new Verbatim("public abstract TVisitorResult Accept<TVisitorResult>(Visitor<TVisitorResult> visitor);"));
-        output.WriteLine(new Verbatim("public abstract class Visitor<TVisitorResult>"));
-        using (output.OpenBlock())
-        {
-            foreach (var record in InnerRecords)
-            {
-                using (output.StartLine())
-                {
-                    output.Write("public abstract TVisitorResult Visit(");
-                    new Type(record).Write(output);
-                    output.Write(" ");
-                    output.Write(record.Name.ToLowerFirstCharacter());
-                    output.Write(");");
-                }
             }
         }
     }
 
-    private IEnumerable<INamedTypeSymbol> InnerRecords => varyRecord.GetTypeMembers().Where(type => type.IsRecord);
+    private IEnumerable<INamedTypeSymbol> InnerRecords => varyRecord.GetTypeMembers()
+        .Where(type => type.IsRecord && type.IsReferenceType);
 }

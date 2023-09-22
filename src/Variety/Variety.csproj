@@ -13,6 +13,41 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" PrivateAssets="all" />
+        <PackageReference Include="Listing" Version="0.1.0-a000" PrivateAssets="all" GeneratePathProperty="true" />
+    </ItemGroup>
+
+    <!-- NuGet package -->
+    <PropertyGroup>
+        <Version>0.1.0</Version>
+    </PropertyGroup>
+
+    <!-- NuGet package -->
+    <PropertyGroup>
+        <PackageId>Variety</PackageId>
+        <Title>Variety: not write visitors by hand anymore</Title>
+        <AssemblyVersion>0.1.0.0</AssemblyVersion>
+        <FileVersion>0.1.0</FileVersion>
+        <Version>0.1.0</Version>
+        <Authors>Alexey Pepelev</Authors>
+        <Product>Variety</Product>
+        <!--        <PackageReadmeFile>README.md</PackageReadmeFile>-->
+        <PackageTags>source-generator visitor discriminated-union</PackageTags>
+        <!--        <PackageIcon>Icon.png</PackageIcon>-->
+        <PackageProjectUrl>https://github.com/pepelev/Variety</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <MinClientVersion>2.12</MinClientVersion>
+        <IncludeSymbols>true</IncludeSymbols>
+        <IncludeSource>true</IncludeSource>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!--        <None Include="$(MSBuildThisFileDirectory)/../../icon/Icon.png" Pack="true" PackagePath="/" />-->
+        <!--        <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="/" />-->
     </ItemGroup>
 
     <ItemGroup>
@@ -20,8 +55,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true"
-              PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(PkgListing)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
 </Project>

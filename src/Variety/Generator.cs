@@ -1,5 +1,6 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
+using Listing;
+using Listing.Contents;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -18,10 +19,6 @@ namespace Variety
     }
 }";
 
-    public Generator()
-    {
-    }
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(
@@ -31,23 +28,11 @@ namespace Variety
             )
         );
 
-        
-
-        // if (!Debugger.IsAttached)
-        // {
-        //     Debugger.Launch();
-        // }
-
         var resultRecords = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: (node, _) => node is RecordDeclarationSyntax { AttributeLists.Count: > 0 },
                 transform: (syntaxContext, token) =>
                 {
-                    // if (!Debugger.IsAttached)
-                    // {
-                    //     Debugger.Launch();
-                    // }
-
                     token.ThrowIfCancellationRequested();
                     var declaration = (RecordDeclarationSyntax)syntaxContext.Node;
                     var semantic = syntaxContext.SemanticModel;
@@ -63,19 +48,26 @@ namespace Variety
             data,
             (sourceContext, entry) =>
             {
-                // if (!Debugger.IsAttached)
-                // {
-                //     Debugger.Launch();
-                // }
-
                 var (records, compilation) = entry;
                 foreach (var record in records)
                 {
                     var semantic = compilation.GetSemanticModel(record.SyntaxTree);
                     if (semantic.GetDeclaredSymbol(record) is INamedTypeSymbol symbol)
                     {
-                        var vary = new Vary(symbol);
-                        sourceContext.AddSource(vary.Name, vary);
+                        if (!symbol.IsReferenceType)
+                        {
+                            var diagnostic = Diagnostic.Create(
+                                Diagnostics.VaryRecordMustBeReferenceType,
+                                location: record.Keyword.GetLocation(),
+                                messageArgs: symbol.ToDisplayString()
+                            );
+                            sourceContext.ReportDiagnostic(diagnostic);
+                        }
+                        else
+                        {
+                            var vary = new Vary(symbol);
+                            sourceContext.AddSource(vary.Name, vary);
+                        }
                     }
                 }
             }
