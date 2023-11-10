@@ -34,7 +34,7 @@ internal sealed class Vary : IContent
                     {
                         output.Write("public abstract TVisitorResult Visit(");
                         output.Write(new Type(record));
-                        output.Write(" ");
+                        output.Write(" @");
                         output.Write(record.Name.ToLowerFirstCharacter());
                         output.Write(");");
                     }
